@@ -14,14 +14,15 @@ import DeviceInfo from 'react-native-device-info';
 
 //ThirdWeb
 import { useContract, useContractMetadata, useContractRead } from "@thirdweb-dev/react-native";
+import { Sepolia } from "@thirdweb-dev/chains";
 import { BigNumber } from 'ethers';
 
 const App = () => {
 
   return (
     <ThirdwebProvider
-      activeChain="goerli"
-      clientId="83ec3aa672fe213e0223046e630d99d5"
+      activeChain={ Sepolia }
+      clientId="45aa25dc334ef22899d5c7dda98abd40"
       supportedWallets={[metamaskWallet(), rainbowWallet(), localWallet()]}>
       <AppInner />
       
@@ -59,17 +60,11 @@ const AppInner = () => {
 
 function Component() {
   const concertId = 1;
-  const { contract } = useContract("0xbb5318B3Dddf00C28ccf3bD9189748616bDa4531");
-  const { data, isLoading } = useContractRead(contract, "getConcertDetails", [concertId])
+  const { contract } = useContract("0x57a16bA9144b76FD2a87cad6C8B17BC8393e6F0F");
+  const { data, isLoading } = useContractRead(contract, "numConcerts")
   console.log(data);
 
-  if (!isLoading) {
-      const myBigNumber = BigNumber.from(data[1]);
-      const myNumber = myBigNumber.toNumber();
-      const myDate = new Date(myNumber);
-      console.log(myDate);
-      console.log(myBigNumber);
-  }
+
   
   return (
     <View>

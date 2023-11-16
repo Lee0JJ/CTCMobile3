@@ -26,7 +26,7 @@ import { Dimensions } from 'react-native';
 import { useStateContext } from '../context/index';
 import Loader from '../components/Loader';
 import PopUpAnimation from '../components/PopUpAnimation';
-
+import EmptyListAnimation from '../components/EmptyListAnimation';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 import { daysLeft, calTotalAvailableTickets, calLowestTicketPrice } from '../utils';
@@ -42,39 +42,33 @@ const HomeScreen = ({ navigation }) => {
   const { address, contract, getCampaigns } = useStateContext();
   const [isLoading, setIsLoading] = useState(false);
   const [concertList, setConcertList] = useState([]);
-  const [showAnimation, setShowAnimation] = useState(true);
+  const [showAnimation, setShowAnimation] = useState(false);
 
-  const fetchCampaigns = async () => {
-    try {
-      setIsLoading(true);
-      setShowAnimation(true);
-      const data = await getCampaigns();
-      setConcertList(data);
-      setTimeout(() => {
-        setShowAnimation(false);
-      }, 3000);
-      setShowAnimation(false);
-      setIsLoading(false);
-    } catch (error) {
-      console.log("fetchCampaigns error", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  setTimeout(() => {
-    if (contract) {
-      fetchCampaigns();
-    }
-  }, 3000);
-
-  useEffect(() => {
-    //console.log("address", address);
-    if (contract) {
-      fetchCampaigns();
-    }
-    //console.log("concertList", JSON.stringify(concertList, null, 2));
-  }, [address, contract]);
+  // useEffect(() => {
+  //   let intervalId;
+  //   const fetchCampaigns = async () => {
+  //     try {
+  //       setIsLoading(true);
+  //       setShowAnimation(true);
+  //       const data = await getCampaigns();
+  //       setConcertList(data);
+  //       setTimeout(() => {
+  //         setShowAnimation(false);
+  //       }, 3000);
+  //       setShowAnimation(false);
+  //       setIsLoading(false);
+  //     } catch (error) {
+  //       console.log("fetchCampaigns error", error);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   }
+  //   if (contract) {
+  //     fetchCampaigns();
+  //     intervalId = setInterval(fetchCampaigns, 10000); //10 seconds
+  //   }
+  //   return () => clearInterval(intervalId);
+  // }, [address, contract]);
 
   //console.log("concertList", JSON.stringify(concertList, null, 2));
 
@@ -84,21 +78,17 @@ const HomeScreen = ({ navigation }) => {
     <View style={styles.ScreenContainer}>
       <StatusBar backgroundColor={COLORS.primaryBlackHex} />
 
-      {showAnimation ? 
-      <PopUpAnimation
-        source={require('../lottie/ticket.json')}
-      /> 
-      : null}
+      {showAnimation ?
+        <PopUpAnimation
+          source={require('../lottie/ticket.json')}
+        />
+        : null}
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.ScrollViewFlex}>
         {/* App Header */}
-        <HeaderBar />
-
-        <Text style={styles.ScreenTitle}>
-          Find the best{'\n'}Concert for you
-        </Text>
+        <HeaderBar title="Home" />
 
         {/* Concert Flatlist */}
 
@@ -119,15 +109,8 @@ const HomeScreen = ({ navigation }) => {
               showsVerticalScrollIndicator={false}
               showsHorizontalScrollIndicator={false}
               ListEmptyComponent={
-                <View style={styles.EmptyListContainer}>
-                  {/* {isLoading ? <Loader /> : <Text style={styles.CategoryText}>No Concert Available</Text>} */}
-                  {showAnimation ? (
-                    <PopUpAnimation
-                      source={require('../lottie/ticket.json')}
-                    />
-                  ) : (
-                    <Text style={styles.CategoryText}>No Concert Available</Text>
-                  )}
+                <View style={{ flex: 1, paddingHorizontal: 100, }}>
+                  <EmptyListAnimation title={'No Concert Available'} />
                 </View>
               }
               contentContainerStyle={styles.FlatListContainer}
@@ -135,20 +118,22 @@ const HomeScreen = ({ navigation }) => {
               data={concertList}
               keyExtractor={(item) => String(item.cId)}
               renderItem={({ item }) => (
-                <TouchableOpacity
-                  key={item.cId}
-                  onPress={() => {
-                    navigation.push('Details', {
-                      id: item.cId,
-                      item: item,
-                    });
-                    console.log("concert Id", item.cId);
-                  }}>
-                  <CoffeeCard
+                <>
+                  <TouchableOpacity
                     key={item.cId}
-                    item={item}
-                  />
-                </TouchableOpacity>
+                    onPress={() => {
+                      navigation.push('Details', {
+                        id: item.cId,
+                        item: item,
+                      });
+                      console.log("concert Id", item.cId);
+                    }}>
+                    <CoffeeCard
+                      key={item.cId}
+                      item={item}
+                    />
+                  </TouchableOpacity>
+                </>
               )}
             />
 

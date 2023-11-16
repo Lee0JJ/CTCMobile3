@@ -25,24 +25,9 @@ import ImageSlider from '../components/ImageSlider';
 import Loader from '../components/Loader';
 import { daysLeft, calTotalAvailableTickets, calLowestTicketPrice } from '../utils';
 
-const ZoneInfo = ({ data, index, onTicketAmountChange }) => {
-  const [ticketAmount, setTicketAmount] = useState(0);
+const rates = 0.001;
 
-  const handleTicketAmountChange = (newAmount, action) => {
-    if (action === 'add') {
-      const updatedAmount = ticketAmount + newAmount;
-      if (updatedAmount <= data.seatAmount) {
-        setTicketAmount(updatedAmount);
-        onTicketAmountChange(data.price, newAmount, index, 'add');
-      }
-    } else {
-      const updatedAmount = ticketAmount - newAmount;
-      if (updatedAmount >= 0) {
-        setTicketAmount(updatedAmount);
-        onTicketAmountChange(data.price, newAmount, index, 'subtract');
-      }
-    }
-  };
+const ZoneInfo = ({ data, index, onTicketAmountChange, zoneTicket }) => {
 
   return (
     <TouchableOpacity
@@ -73,25 +58,24 @@ const ZoneInfo = ({ data, index, onTicketAmountChange }) => {
             paddingLeft: 10,
           },
         ]}>
-        Price : {data.price} {"\n"}
+        Price : {data.price * rates} {"\n"}
         Available Seat : {data.seatAmount}
       </Text>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <TouchableOpacity
-          onPress={() => handleTicketAmountChange(1, 'subtract')}
-          disabled={ticketAmount === 0}
+          onPress={() => onTicketAmountChange(1, index, 'subtract')}
           style={{
             backgroundColor: COLORS.primaryOrangeHex,
             padding: 5,
             borderRadius: 5,
             marginRight: 5,
           }}>
-          <Text style={{ color: COLORS.white }}> - </Text>
+          <Text style={{ color: COLORS.white, zIndex: 1 }}> - </Text>
         </TouchableOpacity>
         <TextInput
-          value={ticketAmount.toString()}
+          value={zoneTicket[index].toString()}
           onChangeText={(text) =>
-            handleTicketAmountChange(parseInt(text) - ticketAmount, 'add')
+            onTicketAmountChange(text, index, 'input')
           }
           keyboardType="numeric"
           style={{
@@ -105,7 +89,7 @@ const ZoneInfo = ({ data, index, onTicketAmountChange }) => {
           }}
         />
         <TouchableOpacity
-          onPress={() => handleTicketAmountChange(1, 'add')}
+          onPress={() => onTicketAmountChange(1, index, 'add')}
           style={{
             backgroundColor: COLORS.primaryOrangeHex,
             padding: 5,
@@ -119,41 +103,37 @@ const ZoneInfo = ({ data, index, onTicketAmountChange }) => {
   );
 };
 
-const ZoneInfoList = ({ zoneInfo, onTicketAmountChange }) => {
-  const zoneTicket = new Array(zoneInfo.length).fill(0);
-
-  const handleTicketAmountChange = (price, newAmount, zoneId, action) => {
-    if (action === 'add') {
-      zoneTicket[zoneId] += newAmount;
-    } else {
-      zoneTicket[zoneId] -= newAmount;
-    }
-    onTicketAmountChange(price, newAmount, zoneId, action);
-  };
-
-  return (
-    <>
-      {zoneInfo.map((data, index) => (
-        <ZoneInfo
-          key={index}
-          index={index}
-          data={data}
-          onTicketAmountChange={handleTicketAmountChange}
-        />
-      ))}
-    </>
-  );
-};
-
 const DetailsScreen = ({ navigation, route }) => {
-  const item = route.params.item;
-  const rates = 0.001;
 
-  const { purchaseTickets, getUserTickets } = useStateContext();
+
+  const { purchaseTickets, getUserTickets, getConcertById } = useStateContext();
   const [imageURL, setImageURL] = useState([]);
   const [showAnimation, setShowAnimation] = useState(false);
   const [showPaySuccess, setShowPaySuccess] = useState(false);
+  const [showPayFail, setShowPayFail] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const [item, setItem] = useState(route.params.item);
+
+  useEffect(() => {
+    let intervalId;
+    const fetchConcert = async () => {
+      try {
+        setIsLoading(true);
+        let concert = await getConcertById(route.params.item.cId.toString());
+        setItem(prevItem => ({ ...prevItem, zoneInfo: concert.zoneInfo }));
+        setIsLoading(false);
+      } catch (error) {
+        console.log("fetchConcert error", error);
+        setIsLoading(false);
+        // Handle the error here
+      }
+    }
+    fetchConcert();
+    intervalId = setInterval(fetchConcert, 10000); //10 seconds
+    return () => clearInterval(intervalId);
+  }, [route.params.item]);
+
 
   //Create function 
   const fetchImage = async (image) => {
@@ -166,7 +146,7 @@ const DetailsScreen = ({ navigation, route }) => {
           //console.log('imageURL', imageURL);
         }
       })
-      .catch(error => console.error(error));
+      .catch(error => console.log("fetch image", error));
   }
 
   //fetch image from campaign.imageUrl which is a directory link a of set of images then convert it to array string
@@ -191,24 +171,68 @@ const DetailsScreen = ({ navigation, route }) => {
   //Declare length 3 array variable to store ticket amount for each zone
 
   const [zoneTicket, setZoneTicket] = useState(Array.from({ length: item.zoneInfo.length }, () => 0));
+  const [selectedZone, setSelectedZone] = useState(null);
 
-  const handleTicketAmountChange = useCallback((price, newAmount, zoneId, action) => {
-    if (action === 'add') {
-      setTotalPrice(totalPrice + price * newAmount);
+  const handleTicketAmountChange = (input, zoneId, action) => {
+    setSelectedZone(zoneId);
+
+    if (action === 'input') {
       setZoneTicket(prevState => {
         const newState = [...prevState];
-        newState[zoneId] += newAmount;
+        newState[zoneId] = parseInt(input);
+        for (let i = 0; i < newState.length; i++) {
+          if (i !== zoneId) {
+            newState[i] = 0;
+          }
+        }
         return newState;
       });
-    } else {
-      setTotalPrice(totalPrice - price * newAmount);
+    } else if (action === 'add') {
       setZoneTicket(prevState => {
         const newState = [...prevState];
-        newState[zoneId] -= newAmount;
+        newState[zoneId] += 1;
+        for (let i = 0; i < newState.length; i++) {
+          if (i !== zoneId) {
+            newState[i] = 0;
+          }
+        }
+        return newState;
+      });
+    } else if (action === 'subtract') {
+      setZoneTicket(prevState => {
+        const newState = [...prevState];
+        newState[zoneId] -= 1;
+        for (let i = 0; i < newState.length; i++) {
+          if (i !== zoneId) {
+            newState[i] = 0;
+          }
+        }
         return newState;
       });
     }
-  }, [totalPrice]);
+
+    // Fix negative and overflow values
+    setZoneTicket(prevState => {
+      const newState = [...prevState];
+      for (let i = 0; i < newState.length; i++) {
+        if (newState[i] < 0) {
+          newState[i] = 0;
+        }
+        if (newState[i] > item.zoneInfo[i].seatAmount) {
+          newState[i] = item.zoneInfo[i].seatAmount;
+        }
+      }
+      return newState;
+    });
+  };
+
+  useEffect(() => {
+    //set totalprice as sum of selected zone ticket price
+    if (selectedZone !== null) {
+      setTotalPrice(item.zoneInfo[selectedZone].price * zoneTicket[selectedZone]);
+    }
+  }, [selectedZone, zoneTicket]);
+
 
   return (
     <View style={styles.ScreenContainer}>
@@ -232,6 +256,15 @@ const DetailsScreen = ({ navigation, route }) => {
         <></>
       )}
 
+      {showPayFail ? (
+        <PopUpAnimation
+          style={styles.LottieAnimation}
+          source={require('../lottie/fail.json')}
+        />
+      ) : (
+        <></>
+      )}
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.ScrollViewFlex}>
@@ -239,12 +272,12 @@ const DetailsScreen = ({ navigation, route }) => {
           EnableBackHandler={true}
           imagelink_portrait={imageURL[0]}
           type={daysLeft(item.date)}
-          id={route.params.item.cId}
+          id={item.cId}
           favourite={'favourite'}
-          name={route.params.item.name}
-          special_ingredient={route.params.item.venue}
-          ingredients={calLowestTicketPrice(route.params.item.zoneInfo)}
-          average_rating={calTotalAvailableTickets(route.params.item.zoneInfo)}
+          name={item.name}
+          special_ingredient={item.venue}
+          ingredients={calLowestTicketPrice(item.zoneInfo)}
+          average_rating={calTotalAvailableTickets(item.zoneInfo)}
           ratings_count={''}
           roasted={''}
           BackHandler={BackHandler}
@@ -278,42 +311,54 @@ const DetailsScreen = ({ navigation, route }) => {
           </Text>
           <Text style={styles.InfoTitle}>Ticket Selection</Text>
           <View style={styles.SizeOuterContainer}>
-            <ZoneInfoList
-              zoneInfo={route.params.item.zoneInfo}
-              onTicketAmountChange={handleTicketAmountChange}
-            />
+            {item.zoneInfo.map((data, index) => (
+              <ZoneInfo
+                key={index}
+                index={index}
+                data={data}
+                onTicketAmountChange={handleTicketAmountChange}
+                zoneTicket={zoneTicket}
+              />
+            ))}
           </View>
-          <View style={styles.FooterButtonContainer}>
+          {/* <View style={styles.FooterButtonContainer}>
             <TouchableWithoutFeedback onPress={() => alert(totalPrice)}>
               <View style={styles.FooterButton}>
                 <Text style={styles.FooterButtonText}>Purchase</Text>
               </View>
             </TouchableWithoutFeedback>
-          </View>
+          </View> */}
         </View>
       </ScrollView>
 
       <PaymentFooter
-        price={totalPrice}
+        price={totalPrice * rates}
         buttonTitle="Purchase"
-        buttonPressHandler={() => {
+        buttonPressHandler={async () => {
           //purchase ticket by calling each zone separately by calling purchaseTickets
           const uniqueId = DeviceInfo.getUniqueId();
-          item.zoneInfo.forEach(async (zone, i) => {
-            if (zone.seatAmount > 0 && zoneTicket[i] > 0) {
-              setShowAnimation(true);
-              const res = await purchaseTickets(uniqueId._j, item.cId, i, zoneTicket[i], zoneTicket[i] * zone.price * rates);
-              if (true) {
-                setShowPaySuccess(true);
-                getUserTickets(uniqueId._j);
-                setTimeout(() => {
-                  setShowPaySuccess(false);
-                  navigation.navigate('History');
-                }, 1500);
-              }
-              setShowAnimation(false);
+          if (selectedZone !== null &&  zoneTicket[selectedZone] > 0 && zoneTicket[selectedZone] <= item.zoneInfo[selectedZone].seatAmount) {
+            setShowAnimation(true);
+            try {
+              await purchaseTickets(uniqueId._j, item.cId, selectedZone + 1, zoneTicket[selectedZone], totalPrice * rates);
+              setShowPaySuccess(true);
+              getUserTickets(uniqueId._j);
+              setTimeout(() => {
+                setShowPaySuccess(false);
+                navigation.navigate('History');
+              }, 1500);
+            } catch (error) {
+              console.error(error);
+              setShowPayFail(true);
+              setTimeout(() => {
+                setShowPayFail(false);
+                navigation.navigate('Home');
+              }, 1500);
+              // handle error here
             }
-          })
+            setShowAnimation(false);
+          }
+
           // addToCarthandler({
           //   id: ItemOfIndex.id,
           //   index: ItemOfIndex.index,
@@ -325,6 +370,7 @@ const DetailsScreen = ({ navigation, route }) => {
           //   price: price,
           // });
         }}
+
       />
     </View>
   );

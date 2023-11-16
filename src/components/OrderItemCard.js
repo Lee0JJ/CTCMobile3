@@ -1,5 +1,5 @@
-import {StyleSheet, Text, View, ImageProps, Image} from 'react-native';
-import React from 'react';
+import { StyleSheet, Text, View, ImageProps, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import {
   BORDERRADIUS,
@@ -8,17 +8,14 @@ import {
   FONTSIZE,
   SPACING,
 } from '../theme/theme';
+import CustomIcon from './CustomIcon';
+import { thirdweb } from '../assets/index';
+import { useStateContext } from '../context/index';
+import typescript from 'react-native-svg';
 
-interface OrderItemCardProps {
-  type: string;
-  name: string;
-  imagelink_square: ImageProps;
-  special_ingredient: string;
-  prices: any;
-  ItemPrice: string;
-}
 
-const OrderItemCard: React.FC<OrderItemCardProps> = ({
+
+const OrderItemCard = ({
   type,
   name,
   imagelink_square,
@@ -26,27 +23,61 @@ const OrderItemCard: React.FC<OrderItemCardProps> = ({
   prices,
   ItemPrice,
 }) => {
-  return (
-    <LinearGradient
-      start={{x: 0, y: 0}}
-      end={{x: 1, y: 1}}
-      colors={[COLORS.primaryGreyHex, COLORS.primaryBlackHex]}
-      style={styles.CardLinearGradient}>
-      <View style={styles.CardInfoContainer}>
-        <View style={styles.CardImageInfoContainer}>
-          <Image source={imagelink_square} style={styles.Image} />
-          <View>
-            <Text style={styles.CardTitle}>{name}</Text>
-            <Text style={styles.CardSubtitle}>{special_ingredient}</Text>
-          </View>
-        </View>
+  const { address, contract, getConcertById } = useStateContext();
+  const [imageURL, setImageURL] = useState([]);
+  //console.log("ConcertId", type);
+  //Create function 
+  const fetchImage = async (image) => {
+    fetch(image, { method: 'get' })
+      .then(response => response.json())
+      .then(data => {
+        if (data) {
+          setImageURL(Object.values(data));
+        }
+      })
+      .catch(error => console.error(error));
+  }
+
+  //fetch image from campaign.imageUrl which is a directory link a of set of images then convert it to array string
+  useEffect(() => {
+    const fetchConcertData = async () => {
+      if (contract) { }
+      //console.log("imagelink_square", imagelink_square);
+      const data = await getConcertById(type);
+      console.log("data", JSON.stringify(data))
+      if (data.image) {
+        fetchImage(data.image);
+      }
+    }
+    fetchConcertData();
+  }, [address, contract]);
+
+return (
+  <LinearGradient
+    start={{ x: 0, y: 0 }}
+    end={{ x: 1, y: 1 }}
+    colors={[COLORS.primaryGreyHex, COLORS.primaryBlackHex]}
+    style={styles.CardLinearGradient}>
+    <View style={styles.CardInfoContainer}>
+      <View style={styles.CardImageInfoContainer}>
+        <Image source={imageURL.length == 0 ? (thirdweb) : ({ uri: imageURL[0] })} style={styles.Image} />
         <View>
-          <Text style={styles.CardCurrency}>
-            $ <Text style={styles.CardPrice}>{ItemPrice}</Text>
-          </Text>
+          <Text style={styles.CardTitle}>{name}</Text>
+          <Text style={styles.CardSubtitle}>{special_ingredient}</Text>
         </View>
       </View>
-      {prices.map((data: any, index: any) => (
+      <View>
+        <Text style={styles.CardCurrency}>
+          <CustomIcon
+            name="ticket"
+            size={18}
+            color={COLORS.primaryOrangeHex}
+          />
+          <Text style={styles.CardPrice}>{ItemPrice}</Text>
+        </Text>
+      </View>
+    </View>
+    {/* {prices.map((data, index) => (
         <View key={index.toString()} style={styles.CardTableRow}>
           <View style={styles.CardTableRow}>
             <View style={styles.SizeBoxLeft}>
@@ -78,9 +109,9 @@ const OrderItemCard: React.FC<OrderItemCardProps> = ({
             </Text>
           </View>
         </View>
-      ))}
-    </LinearGradient>
-  );
+      ))} */}
+  </LinearGradient>
+);
 };
 
 const styles = StyleSheet.create({

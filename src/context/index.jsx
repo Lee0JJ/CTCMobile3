@@ -14,7 +14,7 @@ import axios from 'axios';
 const StateContext = createContext();
 
 export const StateContextProvider = ({ children }) => {
-  const { contract, isLoading } = useContract('0x57a16bA9144b76FD2a87cad6C8B17BC8393e6F0F');
+  const { contract, isLoading } = useContract('0xb00A1cfBaad7f63323A7C18ADb3BfC966EF0d86b');
   const { mutateAsync: createConcert, isLoading1 } = useContractWrite(contract, "createConcert")
   const { mutateAsync: createOrganizer, isLoading2 } = useContractWrite(contract, "registerAsOrganizer")
 
@@ -187,6 +187,29 @@ export const StateContextProvider = ({ children }) => {
     return parsedCampaigns;
   }
 
+  const getConcertById = async (concertId) => {
+    const concert = await contract.call('getConcertDetails', [concertId]);
+    const zoneInfo = concert.zoneInfo.map(row => ({
+      price: row[0].toNumber(),
+      seatAmount: row[1].toNumber()
+    }));
+
+    const parsedCampaigns =  {
+      cId: concert.concertId,
+      owner: concert.owner,
+      name: concert.name,
+      venue: concert.venue, // Convert to string
+      numZones: concert.numZones.toNumber(),
+      zoneInfo: zoneInfo,
+      date: concert.date.toNumber(),
+      image: concert.imageUrl,
+    };
+
+    //console.log("getConcertById", parsedCampaigns);
+
+    return parsedCampaigns;
+  }
+
   const getUserCampaigns = async () => {
     const allCampaigns = await getCampaigns();
 
@@ -219,25 +242,25 @@ export const StateContextProvider = ({ children }) => {
       console.log(numTickets);
       console.log(amount);
 
-      // const data = await contract.call('purchaseTickets', [
-      //   uniqueId,
-      //   concertId,
-      //   zoneId,
-      //   numTickets
-      // ], {
-      //   value: ethers.utils.parseEther((String(amount)))
-      // });
+      const data = await contract.call('purchaseTickets', [
+        uniqueId,
+        concertId,
+        zoneId,
+        numTickets
+      ], {
+        value: ethers.utils.parseEther((String(amount)))
+      });
 
       return data;
     } catch (error) {
       console.log("Error purchasing tickets:", error);
-      return null;
+      throw error;
     }
   }
 
   const getUserTickets = async (uniqueId) => {
-    //const tickets = await contract.call('getUserOwnedTickets', [uniqueId;
-    const tickets = await contract.call('getUserOwnedTickets', ["9bdd6a453246ebd2"]);
+    const tickets = await contract.call('getUserOwnedTickets', [uniqueId]);
+    //const tickets = await contract.call('getUserOwnedTickets', ["9bdd6a453246ebd2"]);
 
     const parsedTickets = [];
 
@@ -250,7 +273,7 @@ export const StateContextProvider = ({ children }) => {
         used: tickets[i][4]
       })
     }
-    console.log("User Ticket", JSON.stringify(parsedTickets, null, 2));
+    //console.log("User Ticket", JSON.stringify(parsedTickets, null, 2));
     return parsedTickets;
   }
 
@@ -421,7 +444,8 @@ export const StateContextProvider = ({ children }) => {
         archiveOrganizer,
         setOrganizerStatus,
         purchaseTickets,
-        getUserTickets
+        getUserTickets,
+        getConcertById
       }}
     >
       {children}

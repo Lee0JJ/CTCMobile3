@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   ScrollView,
   StatusBar,
@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   TextInput,
 } from 'react-native';
-import { useStore } from '../store/store';
 import {
   BORDERRADIUS,
   COLORS,
@@ -19,15 +18,14 @@ import {
 } from '../theme/theme';
 import ImageBackgroundInfo from '../components/ImageBackgroundInfo';
 import PaymentFooter from '../components/PaymentFooter';
-import { act } from 'react-test-renderer';
 import { useStateContext } from '../context';
-// import {StatusBar} from 'expo-status-bar';
-// import {COLORS} from '../../constants';
-// import {ImageBackgroundInfo, ZoneInfoList} from '../../components';
-// import {styles} from './styles';
+import DeviceInfo from 'react-native-device-info';
+import PopUpAnimation from '../components/PopUpAnimation';
+import ImageSlider from '../components/ImageSlider';
+import Loader from '../components/Loader';
+import { daysLeft, calTotalAvailableTickets, calLowestTicketPrice } from '../utils';
 
-const ZoneInfo = ({ data, onTicketAmountChange }) => {
-  const { purchaseTickets } = useStateContext();
+const ZoneInfo = ({ data, index, onTicketAmountChange }) => {
   const [ticketAmount, setTicketAmount] = useState(0);
 
   const handleTicketAmountChange = (newAmount, action) => {
@@ -35,13 +33,13 @@ const ZoneInfo = ({ data, onTicketAmountChange }) => {
       const updatedAmount = ticketAmount + newAmount;
       if (updatedAmount <= data.seatAmount) {
         setTicketAmount(updatedAmount);
-        onTicketAmountChange(data.price, newAmount, 'add');
+        onTicketAmountChange(data.price, newAmount, index, 'add');
       }
     } else {
       const updatedAmount = ticketAmount - newAmount;
       if (updatedAmount >= 0) {
         setTicketAmount(updatedAmount);
-        onTicketAmountChange(data.price, newAmount, 'subtract');
+        onTicketAmountChange(data.price, newAmount, index, 'subtract');
       }
     }
   };
@@ -92,7 +90,9 @@ const ZoneInfo = ({ data, onTicketAmountChange }) => {
         </TouchableOpacity>
         <TextInput
           value={ticketAmount.toString()}
-          onChangeText={(text) => handleTicketAmountChange(parseInt(text) - ticketAmount, 'add')}
+          onChangeText={(text) =>
+            handleTicketAmountChange(parseInt(text) - ticketAmount, 'add')
+          }
           keyboardType="numeric"
           style={{
             color: COLORS.primaryOrangeHex,
@@ -120,13 +120,25 @@ const ZoneInfo = ({ data, onTicketAmountChange }) => {
 };
 
 const ZoneInfoList = ({ zoneInfo, onTicketAmountChange }) => {
+  const zoneTicket = new Array(zoneInfo.length).fill(0);
+
+  const handleTicketAmountChange = (price, newAmount, zoneId, action) => {
+    if (action === 'add') {
+      zoneTicket[zoneId] += newAmount;
+    } else {
+      zoneTicket[zoneId] -= newAmount;
+    }
+    onTicketAmountChange(price, newAmount, zoneId, action);
+  };
+
   return (
     <>
-      {zoneInfo.map((data) => (
+      {zoneInfo.map((data, index) => (
         <ZoneInfo
-          key={data.price}
+          key={index}
+          index={index}
           data={data}
-          onTicketAmountChange={onTicketAmountChange}
+          onTicketAmountChange={handleTicketAmountChange}
         />
       ))}
     </>
@@ -134,11 +146,14 @@ const ZoneInfoList = ({ zoneInfo, onTicketAmountChange }) => {
 };
 
 const DetailsScreen = ({ navigation, route }) => {
-
-  //console.log("DetailsScreen route.params", route.params.item);
   const item = route.params.item;
+  const rates = 0.001;
 
+  const { purchaseTickets, getUserTickets } = useStateContext();
   const [imageURL, setImageURL] = useState([]);
+  const [showAnimation, setShowAnimation] = useState(false);
+  const [showPaySuccess, setShowPaySuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   //Create function 
   const fetchImage = async (image) => {
@@ -156,9 +171,14 @@ const DetailsScreen = ({ navigation, route }) => {
 
   //fetch image from campaign.imageUrl which is a directory link a of set of images then convert it to array string
   useEffect(() => {
-    if (item) {
-      fetchImage(item.image);
-    }
+    const fetchImageAsync = async () => {
+      if (item) {
+        setIsLoading(true);
+        await fetchImage(item.image);
+        setIsLoading(false);
+      }
+    };
+    fetchImageAsync();
   }, [item]);
 
   const [fullDesc, setFullDesc] = useState(false);
@@ -168,34 +188,65 @@ const DetailsScreen = ({ navigation, route }) => {
   };
 
   const [totalPrice, setTotalPrice] = useState(0);
+  //Declare length 3 array variable to store ticket amount for each zone
 
-  const handleTicketAmountChange = (price, newAmount, action) => {
+  const [zoneTicket, setZoneTicket] = useState(Array.from({ length: item.zoneInfo.length }, () => 0));
+
+  const handleTicketAmountChange = useCallback((price, newAmount, zoneId, action) => {
     if (action === 'add') {
       setTotalPrice(totalPrice + price * newAmount);
+      setZoneTicket(prevState => {
+        const newState = [...prevState];
+        newState[zoneId] += newAmount;
+        return newState;
+      });
     } else {
       setTotalPrice(totalPrice - price * newAmount);
+      setZoneTicket(prevState => {
+        const newState = [...prevState];
+        newState[zoneId] -= newAmount;
+        return newState;
+      });
     }
-    console.log('totalPrice', totalPrice);
-  }
+  }, [totalPrice]);
 
   return (
     <View style={styles.ScreenContainer}>
       <StatusBar backgroundColor={COLORS.primaryBlackHex} />
+
+      {showAnimation ? (
+        <PopUpAnimation
+          style={styles.LottieAnimation}
+          source={require('../lottie/ticket.json')}
+        />
+      ) : (
+        <></>
+      )}
+
+      {showPaySuccess ? (
+        <PopUpAnimation
+          style={styles.LottieAnimation}
+          source={require('../lottie/successful.json')}
+        />
+      ) : (
+        <></>
+      )}
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.ScrollViewFlex}>
         <ImageBackgroundInfo
           EnableBackHandler={true}
           imagelink_portrait={imageURL[0]}
-          type={'type'}
+          type={daysLeft(item.date)}
           id={route.params.item.cId}
           favourite={'favourite'}
           name={route.params.item.name}
           special_ingredient={route.params.item.venue}
-          ingredients={route.params.item.venue}
-          average_rating={'4.5'}
-          ratings_count={'100'}
-          roasted={'roasted'}
+          ingredients={calLowestTicketPrice(route.params.item.zoneInfo)}
+          average_rating={calTotalAvailableTickets(route.params.item.zoneInfo)}
+          ratings_count={''}
+          roasted={''}
           BackHandler={BackHandler}
         />
 
@@ -220,6 +271,11 @@ const DetailsScreen = ({ navigation, route }) => {
               </Text>
             </TouchableWithoutFeedback>
           )}
+
+          <ImageSlider images={imageURL} />
+          <Text>
+            {'\n'}
+          </Text>
           <Text style={styles.InfoTitle}>Ticket Selection</Text>
           <View style={styles.SizeOuterContainer}>
             <ZoneInfoList
@@ -242,9 +298,20 @@ const DetailsScreen = ({ navigation, route }) => {
         buttonTitle="Purchase"
         buttonPressHandler={() => {
           //purchase ticket by calling each zone separately by calling purchaseTickets
-          route.params.item.zoneInfo.forEach(zone => {
-            if (zone.seatAmount > 0) {
-              purchaseTickets(uniqueId, concertId, zoneId, numTickets, amount);
+          const uniqueId = DeviceInfo.getUniqueId();
+          item.zoneInfo.forEach(async (zone, i) => {
+            if (zone.seatAmount > 0 && zoneTicket[i] > 0) {
+              setShowAnimation(true);
+              const res = await purchaseTickets(uniqueId._j, item.cId, i, zoneTicket[i], zoneTicket[i] * zone.price * rates);
+              if (true) {
+                setShowPaySuccess(true);
+                getUserTickets(uniqueId._j);
+                setTimeout(() => {
+                  setShowPaySuccess(false);
+                  navigation.navigate('History');
+                }, 1500);
+              }
+              setShowAnimation(false);
             }
           })
           // addToCarthandler({

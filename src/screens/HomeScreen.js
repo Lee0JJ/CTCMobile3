@@ -24,10 +24,12 @@ import { FlatList } from 'react-native';
 import CoffeeCard from '../components/CoffeeCard';
 import { Dimensions } from 'react-native';
 import { useStateContext } from '../context/index';
-import { Loader } from '../components/Loader';
-import { loader } from '../assets';
+import Loader from '../components/Loader';
+import PopUpAnimation from '../components/PopUpAnimation';
 
+import Icon from 'react-native-vector-icons/FontAwesome';
 
+import { daysLeft, calTotalAvailableTickets, calLowestTicketPrice } from '../utils';
 
 import { useAddress, useContract, useContractWrite, useContractRead, useStorageUpload } from '@thirdweb-dev/react-native';
 import { ethers } from 'ethers';
@@ -39,26 +41,55 @@ import { ethers } from 'ethers';
 const HomeScreen = ({ navigation }) => {
   const { address, contract, getCampaigns } = useStateContext();
   const [isLoading, setIsLoading] = useState(false);
-  const [concertList, setConcertList] = useState([getCampaigns().catch(() => console.log("getCampaigns error"))]);
+  const [concertList, setConcertList] = useState([]);
+  const [showAnimation, setShowAnimation] = useState(true);
 
   const fetchCampaigns = async () => {
-    setIsLoading(true);
-    const data = await getCampaigns().catch(() => console.log("fetchCampaigns error"));
-    setConcertList(data);
-    //console.log("Concert List", JSON.stringify(concertList, null, 2));
-    setIsLoading(false);
+    try {
+      setIsLoading(true);
+      setShowAnimation(true);
+      const data = await getCampaigns();
+      setConcertList(data);
+      setTimeout(() => {
+        setShowAnimation(false);
+      }, 3000);
+      setShowAnimation(false);
+      setIsLoading(false);
+    } catch (error) {
+      console.log("fetchCampaigns error", error);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
+  setTimeout(() => {
+    if (contract) {
+      fetchCampaigns();
+    }
+  }, 3000);
+
   useEffect(() => {
-    console.log("address", address);
-    if (contract) { fetchCampaigns().catch(() => console.log("fetchCampaigns error")) };
+    //console.log("address", address);
+    if (contract) {
+      fetchCampaigns();
+    }
+    //console.log("concertList", JSON.stringify(concertList, null, 2));
   }, [address, contract]);
+
+  //console.log("concertList", JSON.stringify(concertList, null, 2));
 
   const ListRef = useRef();
 
   return (
     <View style={styles.ScreenContainer}>
       <StatusBar backgroundColor={COLORS.primaryBlackHex} />
+
+      {showAnimation ? 
+      <PopUpAnimation
+        source={require('../lottie/ticket.json')}
+      /> 
+      : null}
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.ScrollViewFlex}>
@@ -66,29 +97,41 @@ const HomeScreen = ({ navigation }) => {
         <HeaderBar />
 
         <Text style={styles.ScreenTitle}>
-          Find the best{'\n'}coffee for you
+          Find the best{'\n'}Concert for you
         </Text>
 
         {/* Concert Flatlist */}
 
         {!isLoading ? (
           <ScrollView
+            horizontal={true}
+            directionalLockEnabled={true}
+            alwaysBounceVertical={false}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{
               paddingBottom: 50
             }}
           >
-
             <FlatList
               ref={ListRef}
-              horizontal
+              //horizontal
+              numColumns={2}
+              showsVerticalScrollIndicator={false}
+              showsHorizontalScrollIndicator={false}
               ListEmptyComponent={
-                <View key={" "} style={styles.EmptyListContainer}>
-                  <Text style={styles.CategoryText}>No Coffee Available</Text>
+                <View style={styles.EmptyListContainer}>
+                  {/* {isLoading ? <Loader /> : <Text style={styles.CategoryText}>No Concert Available</Text>} */}
+                  {showAnimation ? (
+                    <PopUpAnimation
+                      source={require('../lottie/ticket.json')}
+                    />
+                  ) : (
+                    <Text style={styles.CategoryText}>No Concert Available</Text>
+                  )}
                 </View>
               }
-              showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.FlatListContainer}
+              //data={concertList.filter((item) => daysLeft(item.date) != null && calTotalAvailableTickets(item.zoneInfo) >= 0)}
               data={concertList}
               keyExtractor={(item) => String(item.cId)}
               renderItem={({ item }) => (
@@ -170,8 +213,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primaryOrangeHex,
   },
   FlatListContainer: {
-    gap: SPACING.space_20,
-    paddingVertical: SPACING.space_20,
+    alignSelf: 'flex-start',
+    gap: SPACING.space_30,
+    paddingVertical: SPACING.space_30,
     paddingHorizontal: SPACING.space_30,
   },
   EmptyListContainer: {

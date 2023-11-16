@@ -16,9 +16,11 @@ import {
   SPACING,
 } from '../theme/theme';
 import CustomIcon from './CustomIcon';
+import { SliderBox } from 'react-native-image-slider-box';
+import { thirdweb } from '../assets/index';
 
 
-const ImageBackgroundInfo: React.FC<any> = ({
+const ImageBackgroundInfo = ({
   EnableBackHandler,
   imagelink_portrait,
   type,
@@ -36,7 +38,7 @@ const ImageBackgroundInfo: React.FC<any> = ({
   return (
     <View>
       <ImageBackground
-        source={{uri : imagelink_portrait}}
+        source={imagelink_portrait == null ? (thirdweb) : ({ uri: imagelink_portrait })}
         style={styles.ItemBackgroundImage}>
         {EnableBackHandler ? (
           <View style={styles.ImageHeaderBarContainerWithBack}>
@@ -45,12 +47,12 @@ const ImageBackgroundInfo: React.FC<any> = ({
                 BackHandler();
               }}>
               <GradientBGIcon
-                name="left"
-                color={COLORS.primaryLightGreyHex}
+                name="arrow-back"
+                color={COLORS.primaryOrangeHex}
                 size={FONTSIZE.size_16}
               />
             </TouchableOpacity>
-            <TouchableOpacity
+            {/* <TouchableOpacity
               onPress={() => {
                 ToggleFavourite(favourite, type, id);
               }}>
@@ -61,23 +63,24 @@ const ImageBackgroundInfo: React.FC<any> = ({
                 }
                 size={FONTSIZE.size_16}
               />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         ) : (
-          <View style={styles.ImageHeaderBarContainerWithoutBack}>
-            <TouchableOpacity
-              onPress={() => {
-                ToggleFavourite(favourite, type, id);
-              }}>
-              <GradientBGIcon
-                name="like"
-                color={
-                  favourite ? COLORS.primaryRedHex : COLORS.primaryLightGreyHex
-                }
-                size={FONTSIZE.size_16}
-              />
-            </TouchableOpacity>
-          </View>
+          // <View style={styles.ImageHeaderBarContainerWithoutBack}>
+          //   <TouchableOpacity
+          //     onPress={() => {
+          //       ToggleFavourite(favourite, type, id);
+          //     }}>
+          //     <GradientBGIcon
+          //       name="like"
+          //       color={
+          //         favourite ? COLORS.primaryRedHex : COLORS.primaryLightGreyHex
+          //       }
+          //       size={FONTSIZE.size_16}
+          //     />
+          //   </TouchableOpacity>
+          // </View>
+          <></>
         )}
 
         <View style={styles.ImageInfoOuterContainer}>
@@ -92,8 +95,8 @@ const ImageBackgroundInfo: React.FC<any> = ({
               <View style={styles.ItemPropertiesContainer}>
                 <View style={styles.ProperFirst}>
                   <CustomIcon
-                    name={type == 'Bean' ? 'bean' : 'beans'}
-                    size={type == 'Bean' ? FONTSIZE.size_18 : FONTSIZE.size_24}
+                    name={type == null ? 'mic' : 'mic'}
+                    size={type == null ? FONTSIZE.size_18 : FONTSIZE.size_24}
                     color={COLORS.primaryOrangeHex}
                   />
                   <Text
@@ -101,37 +104,37 @@ const ImageBackgroundInfo: React.FC<any> = ({
                       styles.PropertyTextFirst,
                       {
                         marginTop:
-                          type == 'Bean'
+                          type == null
                             ? SPACING.space_4 + SPACING.space_2
                             : 0,
                       },
                     ]}>
-                    {type}
+                    {type == null ? "Not available" : type + " Days Left"} 
                   </Text>
                 </View>
                 <View style={styles.ProperFirst}>
                   <CustomIcon
-                    name={type == 'Bean' ? 'location' : 'drop'}
+                    name={ingredients == null ? 'logo-euro' : 'logo-euro'}
                     size={FONTSIZE.size_16}
                     color={COLORS.primaryOrangeHex}
                   />
-                  <Text style={styles.PropertyTextLast}>{ingredients}</Text>
+                  <Text style={styles.PropertyTextLast}>{ingredients == null ? "SOLD" : ingredients}</Text>
                 </View>
               </View>
             </View>
             <View style={styles.InfoContainerRow}>
               <View style={styles.RatingContainer}>
                 <CustomIcon
-                  name={'star'}
+                  name={'musical-note'}
                   color={COLORS.primaryOrangeHex}
                   size={FONTSIZE.size_20}
                 />
-                <Text style={styles.RatingText}>{average_rating}</Text>
-                <Text style={styles.RatingCountText}>({ratings_count})</Text>
+                <Text style={styles.RatingText}>{average_rating == null ? 0 : average_rating}</Text>
+                <Text style={styles.RatingCountText}>({"Tickets Left"})</Text>
               </View>
-              <View style={styles.RoastedContainer}>
-                <Text style={styles.RoastedText}>{roasted}</Text>
-              </View>
+              {/* <View style={styles.RoastedContainer}>
+                <Text style={styles.RoastedText}>{roasted == null ? "Not available" : roasted + " Tickets Left"}</Text>
+              </View> */}
             </View>
           </View>
         </View>

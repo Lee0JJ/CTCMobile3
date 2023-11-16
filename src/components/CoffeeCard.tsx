@@ -18,6 +18,9 @@ import {
 } from '../theme/theme';
 import CustomIcon from './CustomIcon';
 import BGIcon from './BGIcon';
+import { thirdweb } from '../assets/index';
+
+import { daysLeft, calTotalAvailableTickets, calLowestTicketPrice } from '../utils';
 
 const CARD_WIDTH = Dimensions.get('window').width * 0.32;
 
@@ -62,12 +65,13 @@ const CoffeeCard: React.FC<any> = ({
       style={styles.CardLinearGradientContainer}
       colors={[COLORS.primaryGreyHex, COLORS.primaryBlackHex]}>
       <ImageBackground
-        source={{ uri: imageURL ? imageURL[0] : "https://www.thermaxglobal.com/wp-content/uploads/2020/05/image-not-found.jpg" }}
+        source={imageURL.length == 0 ? (thirdweb) :({ uri: imageURL[0] })}
+        //source={thirdweb}
         style={styles.CardImageBG}
         resizeMode="cover">
         <View style={styles.CardRatingContainer}>
           <CustomIcon
-            name={'star'}
+            name={daysLeft(item.date) == null ? "mic-off-sharp" : 'mic'}
             color={COLORS.primaryOrangeHex}
             size={FONTSIZE.size_16}
           />
@@ -78,7 +82,7 @@ const CoffeeCard: React.FC<any> = ({
       <Text style={styles.CardSubtitle}>{/*special_ingredient*/} {item.venue}</Text>
       <View style={styles.CardFooterRow}>
         <Text style={styles.CardPriceCurrency}>
-          {/* <Text style={styles.CardPrice}>{item.zoneInfo[0]?.price || 0}</Text> */}
+          <Text style={styles.CardPrice}>{calTotalAvailableTickets(item.zoneInfo)} Tickets left</Text>
         </Text>
         {/* <TouchableOpacity
           onPress={() => {
@@ -100,6 +104,7 @@ const CoffeeCard: React.FC<any> = ({
 
 const styles = StyleSheet.create({
   CardLinearGradientContainer: {
+    marginHorizontal: 5,
     padding: SPACING.space_15,
     borderRadius: BORDERRADIUS.radius_25,
   },

@@ -4,7 +4,7 @@ export const daysLeft = (deadline) => {
   const difference = new Date(deadline * 1000) - Date.now();
   const remainingDays = difference / (1000 * 3600 * 24);
 
-  return remainingDays.toFixed(0);
+  return remainingDays >= 0 ? remainingDays.toFixed(0) : null;
 };
 
 export const checkIfImage = (url, callback) => {

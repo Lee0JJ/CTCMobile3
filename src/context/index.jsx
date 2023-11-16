@@ -212,9 +212,46 @@ export const StateContextProvider = ({ children }) => {
   }
 
   const purchaseTickets = async (uniqueId, concertId, zoneId, numTickets, amount) => {
-    const data = await contract.call('purchaseTickets', [uniqueId, concertId, zoneId, numTickets], { value: ethers.utils.parseEther(amount)});
+    try {
+      console.log(uniqueId);
+      console.log(concertId);
+      console.log(zoneId);
+      console.log(numTickets);
+      console.log(amount);
 
-    return data;
+      // const data = await contract.call('purchaseTickets', [
+      //   uniqueId,
+      //   concertId,
+      //   zoneId,
+      //   numTickets
+      // ], {
+      //   value: ethers.utils.parseEther((String(amount)))
+      // });
+
+      return data;
+    } catch (error) {
+      console.log("Error purchasing tickets:", error);
+      return null;
+    }
+  }
+
+  const getUserTickets = async (uniqueId) => {
+    //const tickets = await contract.call('getUserOwnedTickets', [uniqueId;
+    const tickets = await contract.call('getUserOwnedTickets', ["9bdd6a453246ebd2"]);
+
+    const parsedTickets = [];
+
+    for (let i = 0; i < tickets.length; i++) {
+      parsedTickets.push({
+        owner: tickets[i][0],
+        time: tickets[i][1].toNumber(),
+        concertId: tickets[i][2].toString(),
+        zoneId: tickets[i][3].toString(),
+        used: tickets[i][4]
+      })
+    }
+    console.log("User Ticket", JSON.stringify(parsedTickets, null, 2));
+    return parsedTickets;
   }
 
   const getDonations = async (pId) => {
@@ -383,7 +420,8 @@ export const StateContextProvider = ({ children }) => {
         updateOrganizer,
         archiveOrganizer,
         setOrganizerStatus,
-        purchaseTickets
+        purchaseTickets,
+        getUserTickets
       }}
     >
       {children}

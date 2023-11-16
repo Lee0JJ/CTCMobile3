@@ -11,7 +11,7 @@ interface PopUpAnimationProps {
 const PopUpAnimation: React.FC<PopUpAnimationProps> = ({style, source}) => {
   return (
     <View style={styles.LottieAnimationContainer}>
-      <LottieView style={style} source={source} autoPlay loop={false} />
+      <LottieView style={{flex:1}} source={source} autoPlay loop />
     </View>
   );
 };

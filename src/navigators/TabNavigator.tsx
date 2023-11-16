@@ -41,7 +41,7 @@ const TabNavigator = () => {
             />
           ),
         }}></Tab.Screen>
-      <Tab.Screen
+      {/* <Tab.Screen
         name="Cart"
         component={CartScreen}
         options={{
@@ -54,7 +54,7 @@ const TabNavigator = () => {
               }
             />
           ),
-        }}></Tab.Screen>
+        }}></Tab.Screen> */}
       {/* <Tab.Screen
         name="Favorite"
         component={FavoritesScreen}
@@ -68,21 +68,21 @@ const TabNavigator = () => {
               }
             />
           ),
-        }}></Tab.Screen>
+        }}></Tab.Screen> */}
       <Tab.Screen
         name="History"
         component={OrderHistoryScreen}
         options={{
           tabBarIcon: ({focused, color, size}) => (
             <CustomIcon
-              name="bell"
+              name="file-tray-full"
               size={25}
               color={
                 focused ? COLORS.primaryOrangeHex : COLORS.primaryLightGreyHex
               }
             />
           ),
-        }}></Tab.Screen> */}
+        }}></Tab.Screen>
     </Tab.Navigator>
   );
 };

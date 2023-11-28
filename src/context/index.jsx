@@ -9,12 +9,13 @@ import { calTotalTickets } from '../utils';
 
 //AXIOS
 import axios from 'axios';
+import { err } from 'react-native-svg/lib/typescript/xml';
 
 
 const StateContext = createContext();
 
 export const StateContextProvider = ({ children }) => {
-  const { contract, isLoading } = useContract('0xb00A1cfBaad7f63323A7C18ADb3BfC966EF0d86b');
+  const { contract, isLoading } = useContract('0x57a16bA9144b76FD2a87cad6C8B17BC8393e6F0F');
   const { mutateAsync: createConcert, isLoading1 } = useContractWrite(contract, "createConcert")
   const { mutateAsync: createOrganizer, isLoading2 } = useContractWrite(contract, "registerAsOrganizer")
 
@@ -93,7 +94,7 @@ export const StateContextProvider = ({ children }) => {
         imgurl: imageUrls
       }
 
-      await axios.post("http://localhost:8800/concert", concert);
+      await axios.post("http://192.168.100.60:8800/concert", concert);
 
       console.log("axios call success");
 
@@ -152,7 +153,7 @@ export const StateContextProvider = ({ children }) => {
         imgurl: imageUrls
       }
       console.log("update concert:", form.concertId)
-      await axios.put(`http://localhost:8800/concert/${form.concertId}`, concert);
+      await axios.put(`http://192.168.100.60:8800/concert/${form.concertId}`, concert);
 
     } catch (error) {
       console.log("contract call failure", error)
@@ -161,30 +162,61 @@ export const StateContextProvider = ({ children }) => {
 
 
   const getCampaigns = async () => {
-    //const campaigns = await useContractRead(contract, "getConcerts", []).catch(error => console.log("Error fetching campaigns:", error));
     const campaigns = await contract.call('getConcerts');
-    //console.log(campaigns);
-    const parsedCampaigns = campaigns.map((campaign, i) => {
-      const zoneInfo = campaign.zoneInfo.map(row => ({
-        price: row[0].toNumber(),
-        seatAmount: row[1].toNumber()
-      }));
 
-      return {
-        cId: campaign.concertId.toNumber(),
-        owner: campaign.owner,
-        name: campaign.name,
-        venue: campaign.venue, // Convert to string
-        numZones: campaign.numZones.toNumber(),
-        zoneInfo: zoneInfo,
-        date: campaign.date.toNumber(),
-        image: campaign.imageUrl,
-        pId: i
-      };
+    const parsedCampaigns = await Promise.all(
+      campaigns.map(async (campaign, i) => {
+        const zoneInfo = campaign.zoneInfo.map(row => ({
+          price: row[0].toNumber(),
+          seatAmount: row[1].toNumber()
+        }));
 
-    });
-    //console.log(JSON.stringify(parsedCampaigns, null, 2));
-    return parsedCampaigns;
+        try {
+          const response = await Promise.race([
+            axios.get(`http://192.168.100.60:8800/concert/${i + 1}`),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+          ]);
+
+          const { description, category } = response.data;
+          // Convert category from string to array
+          const categoryArray = category.split(",");
+          return {
+            cId: campaign.concertId.toNumber(),
+            owner: campaign.owner,
+            name: campaign.name,
+            venue: campaign.venue.toString(),
+            description: description,
+            numZones: campaign.numZones.toNumber(),
+            zoneInfo: zoneInfo,
+            date: campaign.date.toNumber(),
+            image: campaign.imageUrl,
+            category: categoryArray,
+            pId: i
+          };
+
+        } catch (error) {
+          console.log('Error fetching concert data', error);
+          console.log('Proceed with serverless mode...');
+          return {
+            cId: campaign.concertId.toNumber(),
+            owner: campaign.owner,
+            name: campaign.name,
+            venue: campaign.venue.toString(),
+            numZones: campaign.numZones.toNumber(),
+            zoneInfo: zoneInfo,
+            date: campaign.date.toNumber(),
+            image: campaign.imageUrl,
+            pId: i
+          };
+        }
+      })
+    );
+
+    const filteredCampaigns = parsedCampaigns.filter(campaign => campaign !== null);
+
+    //console.log("filteredCampaigns", filteredCampaigns);
+
+    return filteredCampaigns;
   }
 
   const getConcertById = async (concertId) => {
@@ -194,7 +226,7 @@ export const StateContextProvider = ({ children }) => {
       seatAmount: row[1].toNumber()
     }));
 
-    const parsedCampaigns =  {
+    const parsedCampaigns = {
       cId: concert.concertId,
       owner: concert.owner,
       name: concert.name,
@@ -251,6 +283,27 @@ export const StateContextProvider = ({ children }) => {
         value: ethers.utils.parseEther((String(amount)))
       });
 
+      // ticketid INT NOT NULL AUTO_INCREMENT,
+      // concertid INT NOT NULL,
+      // customerid INT NOT NULL,
+      // receipt VARCHAR(255) NOT NULL,
+      // zone VARCHAR(255) NOT NULL,
+      // purchaseDate DATETIME NOT NULL,
+      // used BOOLEAN NOT NULL,
+
+      //create form for axios
+      const ticket = {
+        concertid: concertId,
+        customerid: String(uniqueId),
+        receipt: data.receipt.transactionHash,
+        zone: zoneId,
+        purchaseDate: new Date().toISOString().slice(0, -1),
+        used: false
+      }
+
+      await axios.post("http://192.168.100.60:8800/ticket", ticket);
+
+      console.log("Recript", JSON.stringify(data.receipt));
       return data;
     } catch (error) {
       console.log("Error purchasing tickets:", error);
@@ -266,6 +319,7 @@ export const StateContextProvider = ({ children }) => {
 
     for (let i = 0; i < tickets.length; i++) {
       parsedTickets.push({
+        ticketId: i + 1,
         owner: tickets[i][0],
         time: tickets[i][1].toNumber(),
         concertId: tickets[i][2].toString(),
@@ -323,7 +377,7 @@ export const StateContextProvider = ({ children }) => {
         isarchived: false
       }
 
-      await axios.post("http://localhost:8800/organizer", organizer);
+      await axios.post("http://192.168.100.60:8800/organizer", organizer);
 
 
     } catch (error) {
@@ -346,7 +400,6 @@ export const StateContextProvider = ({ children }) => {
 
     return parsedOrganizer;
   }
-
 
   const updateOrganizer = async (form) => {
     console.log("updateOrganizer", form)
@@ -376,7 +429,7 @@ export const StateContextProvider = ({ children }) => {
         isarchived: form.isArchived
       }
 
-      await axios.put("http://localhost:8800/organizer", organizer);
+      await axios.put("http://192.168.100.60:8800/organizer", organizer);
 
     } catch (error) {
       console.log("contract call failure", error)
@@ -397,7 +450,7 @@ export const StateContextProvider = ({ children }) => {
       }
 
       console.log("archiveOrganizer", organizerId)
-      await axios.put(`http://localhost:8800/organizer/${organizerId}`, organizer);
+      await axios.put(`http://192.168.100.60:8800/organizer/${organizerId}`, organizer);
 
     } catch (error) {
       console.log("contract call failure", error)
@@ -418,10 +471,20 @@ export const StateContextProvider = ({ children }) => {
       }
 
       console.log("setOrganizerStatus", organizerId)
-      await axios.put(`http://localhost:8800/organizer/${organizerId}`, organizer);
+      await axios.put(`http://192.168.100.60:8800/organizer/${organizerId}`, organizer);
 
     } catch (error) {
       console.log("contract call failure", error)
+    }
+  }
+
+  const checkServer = async () => {
+    try {
+      const response = await axios.get("http://192.168.100.60:8800/", { timeout: 5000 });
+      console.log("Server Online");
+      return true;
+    } catch (error) {
+      console.log('Server Offline', error);
     }
   }
 
@@ -445,7 +508,8 @@ export const StateContextProvider = ({ children }) => {
         setOrganizerStatus,
         purchaseTickets,
         getUserTickets,
-        getConcertById
+        getConcertById,
+        checkServer
       }}
     >
       {children}

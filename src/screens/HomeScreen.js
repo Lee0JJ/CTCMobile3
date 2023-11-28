@@ -39,38 +39,118 @@ import { ethers } from 'ethers';
 
 
 const HomeScreen = ({ navigation }) => {
-  const { address, contract, getCampaigns } = useStateContext();
+  const { address, contract, getCampaigns, checkServer } = useStateContext();
+  const [server, setServer] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [concertList, setConcertList] = useState([]);
+  const [filteredConcert, setFilteredConcert] = useState([]);
+  const [sortedConcertList, setSortedConcertList] = useState([]);
   const [showAnimation, setShowAnimation] = useState(false);
 
-  // useEffect(() => {
-  //   let intervalId;
-  //   const fetchCampaigns = async () => {
-  //     try {
-  //       setIsLoading(true);
-  //       setShowAnimation(true);
-  //       const data = await getCampaigns();
-  //       setConcertList(data);
-  //       setTimeout(() => {
-  //         setShowAnimation(false);
-  //       }, 3000);
-  //       setShowAnimation(false);
-  //       setIsLoading(false);
-  //     } catch (error) {
-  //       console.log("fetchCampaigns error", error);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   }
-  //   if (contract) {
-  //     fetchCampaigns();
-  //     intervalId = setInterval(fetchCampaigns, 10000); //10 seconds
-  //   }
-  //   return () => clearInterval(intervalId);
-  // }, [address, contract]);
+  const [searchText, setSearchText] = useState('');
+  const [categories, setCategories] = useState([
+    "All",
+    "Pop",
+    "Rock",
+    "Hip Hop",
+    "Country",
+    "Jazz",
+    "Electronic",
+    "Classical",
+    "R&B",
+    "Reggae",
+    "Indie"
+  ]);
+  const [categoryIndex, setCategoryIndex] = useState({
+    index: 0,
+    category: categories[0],
+  });
 
-  //console.log("concertList", JSON.stringify(concertList, null, 2));
+  const sortConcertsByTime = () => {
+    const sortedList = [...filteredConcert].sort((a, b) => a.time - b.time);
+    setSortedConcertList(sortedList);
+  };
+
+  const searchConcert = (search) => {
+    if (search !== '') {
+      ListRef?.current?.scrollToOffset({
+        animated: true,
+        offset: 0,
+      });
+      setCategoryIndex({ index: 0, category: categories[0] });
+      setFilteredConcert([
+        ...concertList.filter((item) =>
+          item.name.toLowerCase().includes(search.toLowerCase())
+        ),
+      ]);
+    }
+  };
+
+  const resetSearchConcert = () => {
+    ListRef?.current?.scrollToOffset({
+      animated: true,
+      offset: 0,
+    });
+    setCategoryIndex({ index: 0, category: categories[0] });
+    setFilteredConcert([...concertList]);
+    setSearchText('');
+  };
+
+  useEffect(() => {
+    let intervalId;
+    const fetchCampaigns = async () => {
+      try {
+        setIsLoading(true);
+        setShowAnimation(true);
+        const server = await checkServer();
+        setServer(server);
+        const data = await getCampaigns();
+        setConcertList(data);
+        setFilteredConcert(data);
+        setTimeout(() => {
+          setShowAnimation(false);
+        }, 3000);
+        setShowAnimation(false);
+        setIsLoading(false);
+      } catch (error) {
+        console.log("fetchCampaigns error", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    if (contract) {
+      fetchCampaigns();
+      intervalId = setInterval(fetchCampaigns, 30000); // 30 seconds
+    }
+    return () => clearInterval(intervalId);
+  }, [address, contract]);
+
+
+  const getConcertList = (category, data) => {
+    console.log("category", category);
+    if (category === 'All') {
+      return data;
+    } else {
+      try {
+        //display all concerts that have the category
+        console.log("data", data);
+        data.map((item) => {
+          console.log("item", item.category);
+        });
+        let concert = data.filter((item) => item.category.includes(category));
+        return concert;
+      } catch (error) {
+        console.log("Database Unsychronise error", error);
+        return [];
+      }
+    }
+  };
+
+  useEffect(() => {
+    sortConcertsByTime();
+  }, [filteredConcert]);
+
+  //console.log("filteredConcert", JSON.stringify(filteredConcert));
 
   const ListRef = useRef();
 
@@ -87,8 +167,100 @@ const HomeScreen = ({ navigation }) => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.ScrollViewFlex}>
+
         {/* App Header */}
+
         <HeaderBar title="Home" />
+
+
+        {/* Search Input */}
+
+        <View style={styles.InputContainerComponent}>
+          <TouchableOpacity
+            onPress={() => {
+              searchConcert(searchText);
+            }}>
+            <CustomIcon
+              style={styles.InputIcon}
+              name="search"
+              size={FONTSIZE.size_18}
+              color={
+                searchText.length > 0
+                  ? COLORS.primaryOrangeHex
+                  : COLORS.primaryLightGreyHex
+              }
+            />
+          </TouchableOpacity>
+          <TextInput
+            placeholder="Find Concert..."
+            value={searchText}
+            onChangeText={text => {
+              setSearchText(text);
+              searchConcert(text);
+            }}
+            placeholderTextColor={COLORS.primaryLightGreyHex}
+            style={styles.TextInputContainer}
+          />
+          {searchText.length > 0 ? (
+            <TouchableOpacity
+              onPress={() => {
+                resetSearchConcert();
+              }}>
+              <CustomIcon
+                style={styles.InputIcon}
+                name="close"
+                size={FONTSIZE.size_16}
+                color={COLORS.primaryLightGreyHex}
+              />
+            </TouchableOpacity>
+          ) : (
+            <></>
+          )}
+        </View>
+
+        {/* Category Scroller */}
+        {server ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.CategoryScrollViewStyle}>
+            {categories.map((data, index) => (
+              <View
+                key={index.toString()}
+                style={styles.CategoryScrollViewContainer}>
+                <TouchableOpacity
+                  style={styles.CategoryScrollViewItem}
+                  onPress={() => {
+                    ListRef?.current?.scrollToOffset({
+                      animated: true,
+                      offset: 0,
+                    });
+                    setCategoryIndex({ index: index, category: categories[index] });
+                    setFilteredConcert([
+                      ...getConcertList(categories[index], concertList),
+                    ]);
+                  }}>
+                  <Text
+                    style={[
+                      styles.CategoryText,
+                      categoryIndex.index == index
+                        ? { color: COLORS.primaryOrangeHex }
+                        : {},
+                    ]}>
+                    {data}
+                  </Text>
+                  {categoryIndex.index == index ? (
+                    <View style={styles.ActiveCategory} />
+                  ) : (
+                    <></>
+                  )}
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+        ) : null}
+
+
 
         {/* Concert Flatlist */}
 
@@ -98,8 +270,54 @@ const HomeScreen = ({ navigation }) => {
             directionalLockEnabled={true}
             alwaysBounceVertical={false}
             showsVerticalScrollIndicator={false}
+          >
+            <FlatList
+              ref={ListRef}
+              //horizontal
+              numColumns={2}
+              showsVerticalScrollIndicator={false}
+              showsHorizontalScrollIndicator={false}
+              ListEmptyComponent={
+                <View style={{ flex: 1, paddingHorizontal: 100, }}>
+                  <EmptyListAnimation title={'No Concert Available'} />
+                </View>
+              }
+              contentContainerStyle={styles.FlatListContainer}
+              //data={filteredConcert.filter((item) => daysLeft(item.date) != null && calTotalAvailableTickets(item.zoneInfo) >= 0)}
+              data={filteredConcert}
+              keyExtractor={(item) => String(item.cId)}
+              renderItem={({ item }) => (
+                <>
+                  <TouchableOpacity
+                    key={item.cId}
+                    onPress={() => {
+                      navigation.push('Details', {
+                        id: item.cId,
+                        item: item,
+                      });
+                      console.log("concert Id", item.cId);
+                    }}>
+                    <CoffeeCard
+                      key={item.cId}
+                      item={item}
+                    />
+                  </TouchableOpacity>
+                </>
+              )}
+            />
+          </ScrollView>
+        ) : null}
+
+        {/* Sorted Concert Flatlist */}
+        {/* {!isLoading ? (
+          <ScrollView
+            horizontal={true}
+            directionalLockEnabled={true}
+            alwaysBounceVertical={false}
+            showsVerticalScrollIndicator={false}
             contentContainerStyle={{
-              paddingBottom: 50
+              alignItems: 'flex-start',
+              justifyContent: 'flex-start',
             }}
           >
             <FlatList
@@ -114,8 +332,8 @@ const HomeScreen = ({ navigation }) => {
                 </View>
               }
               contentContainerStyle={styles.FlatListContainer}
-              //data={concertList.filter((item) => daysLeft(item.date) != null && calTotalAvailableTickets(item.zoneInfo) >= 0)}
-              data={concertList}
+              //data={filteredConcert.filter((item) => daysLeft(item.date) != null && calTotalAvailableTickets(item.zoneInfo) >= 0)}
+              data={sortedConcertList}
               keyExtractor={(item) => String(item.cId)}
               renderItem={({ item }) => (
                 <>
@@ -138,7 +356,8 @@ const HomeScreen = ({ navigation }) => {
             />
 
           </ScrollView>
-        ) : null}
+        ) : null} */}
+
       </ScrollView>
     </View>
   );
@@ -176,8 +395,8 @@ const styles = StyleSheet.create({
     color: COLORS.primaryWhiteHex,
   },
   CategoryScrollViewStyle: {
-    paddingHorizontal: SPACING.space_20,
-    marginBottom: SPACING.space_20,
+    paddingHorizontal: SPACING.space_10,
+    //marginBottom: SPACING.space_10,
   },
   CategoryScrollViewContainer: {
     paddingHorizontal: SPACING.space_15,

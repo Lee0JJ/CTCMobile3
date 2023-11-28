@@ -17,6 +17,7 @@ import {
   trustWallet,
   walletConnect,
 } from "@thirdweb-dev/react-native";
+import TicketQR from './src/screens/TicketQR';
 
 const Stack = createNativeStackNavigator();
 
@@ -48,9 +49,13 @@ const App = () => {
               component={DetailsScreen}
               options={{ animation: 'slide_from_bottom' }}></Stack.Screen>
             <Stack.Screen
+              name="Ticket"
+              component={TicketQR}
+              options={{ animation: 'slide_from_bottom' }}></Stack.Screen>
+            {/* <Stack.Screen
               name="Payment"
               component={PaymentScreen}
-              options={{ animation: 'slide_from_bottom' }}></Stack.Screen>
+              options={{ animation: 'slide_from_bottom' }}></Stack.Screen> */}
           </Stack.Navigator>
         </NavigationContainer>
       </StateContextProvider>

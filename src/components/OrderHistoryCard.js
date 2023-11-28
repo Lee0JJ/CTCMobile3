@@ -42,6 +42,10 @@ const OrderHistoryCard = ({
           <TouchableOpacity
             key={index.toString()}
             onPress={() => {
+              navigationHandler.push('Ticket', {
+                //id: data[0].concertId,
+                item: JSON.stringify(data),
+              });
               // navigationHandler({
               //   index: data.index,
               //   id: data.id,

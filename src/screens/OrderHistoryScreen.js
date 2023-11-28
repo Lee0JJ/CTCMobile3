@@ -104,7 +104,7 @@ const OrderHistoryScreen = ({ navigation }) => {
                   return (
                     <OrderHistoryCard
                       key={index.toString()}
-                      //navigationHandler={navigationHandler}
+                      navigationHandler={navigation}
                       CartList={data}
                     //CartListPrice={data} //data["1"].length
                     //OrderDate={new Date(data.time * 1000).toLocaleString()}

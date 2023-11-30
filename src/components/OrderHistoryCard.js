@@ -9,32 +9,35 @@ import React from 'react';
 import { COLORS, FONTFAMILY, FONTSIZE, SPACING } from '../theme/theme';
 import OrderItemCard from './OrderItemCard';
 import CustomIcon from './CustomIcon';
+import { useStateContext } from '../context';
 
 const OrderHistoryCard = ({
   navigationHandler,
   CartList,
-  CartListPrice,
-  OrderDate,
+  Title,
+  OccurDate,
 }) => {
   //console.log('CartList', CartList);
   const concertTicket = Object.values(CartList);
   //console.log('concertTicket', concertTicket);
+  //console.log('concertTicket[0][0].cId', JSON.stringify(concertTicket[0][0].concertId, null, 2));
   return (
     <View style={styles.CardContainer}>
       <View style={styles.CardHeader}>
         <View>
-          <Text style={styles.HeaderTitle}>Order Time</Text>
-          <Text style={styles.HeaderSubtitle}>{new Date(concertTicket[0][0].time * 1000).toLocaleString()}</Text>
+          <Text style={styles.HeaderTitle}>{Title}</Text>
+          {/* <Text style={styles.HeaderSubtitle}>{new Date(concertTicket[0][0].time * 1000).toLocaleString()}</Text> */}
+          {/* <Text style={styles.HeaderSubtitle}>{concertTicket[0][0].concertId}</Text> */}
         </View>
         <View style={styles.PriceContainer}>
-          <Text style={styles.HeaderTitle}>Total Amount</Text>
-          <Text style={styles.HeaderPrice}>
+          <Text style={styles.HeaderTitle}>{OccurDate}</Text>
+          {/* <Text style={styles.HeaderPrice}>
             <CustomIcon
               name="ticket"
               size={18}
               color={COLORS.primaryOrangeHex}
-            /> {""}
-          </Text>
+            /> {"10"}
+          </Text> */}
         </View>
       </View>
       <View style={styles.ListContainer}>
@@ -42,15 +45,15 @@ const OrderHistoryCard = ({
           <TouchableOpacity
             key={index.toString()}
             onPress={() => {
-              navigationHandler.push('Ticket', {
-                //id: data[0].concertId,
-                item: JSON.stringify(data),
-              });
-              // navigationHandler({
-              //   index: data.index,
-              //   id: data.id,
-              //   type: data.type,
-              // });
+              console.log('date',  concertTicket.every(ticket => ticket[0].used));
+              if (OccurDate < new Date().toLocaleString()) {
+                return 0;
+              } else {
+                navigationHandler.push('Ticket', {
+                  //id: data[0].concertId,
+                  item: JSON.stringify(data),
+                });
+              }
             }}>
             <OrderItemCard
               type={data[0].concertId}

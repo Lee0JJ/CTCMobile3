@@ -25,7 +25,8 @@ import DeviceInfo from 'react-native-device-info';
 
 const OrderHistoryScreen = ({ navigation }) => {
 
-  const { contract, address, getUserTickets } = useStateContext();
+  const { contract, address, getUserTickets, getCampaigns } = useStateContext();
+  const [concertList, setConcertList] = useState([]);
   const [userTickets, setUserTickets] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const uniqueId = DeviceInfo.getUniqueId();
@@ -64,12 +65,31 @@ const OrderHistoryScreen = ({ navigation }) => {
         // Handle the error here
       }
     }
-
-
     const intervalId = setInterval(fetchTicket, 10000); //10 seconds
     fetchTicket();
     return () => clearInterval(intervalId);
-  }, [contract]);//contract, uniqueId
+  }, [contract]);//contract
+
+  useEffect(() => {
+    let intervalId;
+    const fetchCampaigns = async () => {
+      try {
+        setIsLoading(true);
+        const data = await getCampaigns();
+        setConcertList(data);
+        setIsLoading(false);
+      } catch (error) {
+        console.log("fetchCampaigns error", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    if (contract) {
+      fetchCampaigns();
+      intervalId = setInterval(fetchCampaigns, 30000); // 30 seconds
+    }
+    return () => clearInterval(intervalId);
+  }, [address, contract]);
 
   const OrderHistoryList = useStore((state) => state.OrderHistoryList);
   const tabBarHeight = useBottomTabBarHeight();
@@ -82,7 +102,6 @@ const OrderHistoryScreen = ({ navigation }) => {
       type,
     });
   };
-
 
   return (
     <View style={styles.ScreenContainer}>
@@ -106,8 +125,10 @@ const OrderHistoryScreen = ({ navigation }) => {
                       key={index.toString()}
                       navigationHandler={navigation}
                       CartList={data}
-                    //CartListPrice={data} //data["1"].length
-                    //OrderDate={new Date(data.time * 1000).toLocaleString()}
+                      Title={concertList && concertList[Object.values(data)[0][0].concertId - 1]?.name}
+                      OccurDate={new Date(concertList && concertList[Object.values(data)[0][0].concertId - 1]?.date * 1000).toLocaleString()}
+                      //CartListPrice={data} //data["1"].length
+                      //OrderDate={new Date(data.time * 1000).toLocaleString()}
                     />
                   );
                   // } catch (error) {

@@ -5,14 +5,14 @@ import {COLORS, SPACING} from '../theme/theme';
 import CustomIcon from './CustomIcon';
 
 
-const GradientBGIcon = ({name, color, size}) => {
+const GradientBGIcon = ({name, color, size, style}) => {
   return (
     <View style={styles.Container}>
       <LinearGradient
         start={{x: 0, y: 0}}
         end={{x: 1, y: 1}}
         colors={[COLORS.primaryGreyHex, COLORS.primaryBlackHex]}
-        style={styles.LinearGradientBG}>
+        style={[styles.LinearGradientBG, style]}>
         <CustomIcon name={name} color={color} size={size} />
       </LinearGradient>
     </View>

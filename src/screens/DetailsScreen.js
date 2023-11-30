@@ -105,7 +105,6 @@ const ZoneInfo = ({ data, index, onTicketAmountChange, zoneTicket }) => {
 
 const DetailsScreen = ({ navigation, route }) => {
 
-
   const { purchaseTickets, getUserTickets, getConcertById } = useStateContext();
   const [imageURL, setImageURL] = useState([]);
   const [showAnimation, setShowAnimation] = useState(false);

@@ -37,6 +37,9 @@ import { ethers } from 'ethers';
 //import { calTotalTickets } from '../utils';
 //import { parse } from 'react-native-svg';
 
+import ScrollToButton from '../components/ScrollToButton';
+import GradientBGIcon from '../components/GradientBGIcon';
+
 
 const HomeScreen = ({ navigation }) => {
   const { address, contract, getCampaigns, checkServer } = useStateContext();
@@ -154,6 +157,19 @@ const HomeScreen = ({ navigation }) => {
 
   const ListRef = useRef();
 
+  let listViewRef = useRef();
+
+  const TopButtonHandler = () => {
+    ListRef?.current?.scrollToOffset({
+      animated: true,
+      offset: 0,
+    });
+    console.log("TopButtonHandler");
+    setCategoryIndex({ index: 0, category: categories[0] });
+    setFilteredConcert([...concertList]);
+    setSearchText('');
+  }
+
   return (
     <View style={styles.ScreenContainer}>
       <StatusBar backgroundColor={COLORS.primaryBlackHex} />
@@ -260,8 +276,6 @@ const HomeScreen = ({ navigation }) => {
           </ScrollView>
         ) : null}
 
-
-
         {/* Concert Flatlist */}
 
         {!isLoading ? (
@@ -271,8 +285,9 @@ const HomeScreen = ({ navigation }) => {
             alwaysBounceVertical={false}
             showsVerticalScrollIndicator={false}
           >
+
             <FlatList
-              ref={ListRef}
+              ref={(ref) => ListRef.current = ref}
               //horizontal
               numColumns={2}
               showsVerticalScrollIndicator={false}
@@ -358,6 +373,18 @@ const HomeScreen = ({ navigation }) => {
           </ScrollView>
         ) : null} */}
 
+        {/* <TouchableOpacity
+          style={[styles.ScrollToButtonContainer, { bottom: 70, right: 30 }]}
+          onPress={TopButtonHandler}
+        >
+          <GradientBGIcon
+            //style={[styles.ScrollToButtonContainer, { top: 70, right: 30 }]}
+            name="arrow-up"
+            color={COLORS.primaryOrangeHex}
+            size={FONTSIZE.size_16}
+          />
+        </TouchableOpacity> */}
+
       </ScrollView>
     </View>
   );
@@ -434,6 +461,9 @@ const styles = StyleSheet.create({
     marginTop: SPACING.space_20,
     fontFamily: FONTFAMILY.poppins_medium,
     color: COLORS.secondaryLightGreyHex,
+  },
+  ScrollToButtonContainer: {
+    position: 'absolute',
   },
 });
 

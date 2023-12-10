@@ -25,19 +25,6 @@ export const StateContextProvider = ({ children }) => {
   //IPFS URL === START
   const [file, setFile] = useState([]);
   const [uploadUrls, setUploadUrls] = useState('');
-  //const { mutateAsync: upload } = useStorageUpload();
-
-  // const uploadToIpfs = async (file) => {
-  //   const uploadUrl = await upload({
-  //     data: [file],
-  //     options: {
-  //       uploadWithGatewayUrl: true,
-  //       uploadWithoutDirectory: false
-  //     }
-  //   });
-  //   return uploadUrl;
-  // };
-  //IPFS URL === END
 
   const publishCampaign = async (form) => {
     try {
@@ -303,7 +290,7 @@ export const StateContextProvider = ({ children }) => {
 
       await axios.post("http://192.168.100.60:8800/ticket", ticket);
 
-      console.log("Recript", JSON.stringify(data.receipt));
+      console.log("Receipt", JSON.stringify(data.receipt));
       return data;
     } catch (error) {
       console.log("Error purchasing tickets:", error);
@@ -312,23 +299,33 @@ export const StateContextProvider = ({ children }) => {
   }
 
   const getUserTickets = async (uniqueId) => {
-    const tickets = await contract.call('getUserOwnedTickets', [uniqueId]);
-    //const tickets = await contract.call('getUserOwnedTickets', ["9bdd6a453246ebd2"]);
+    try {
+      const tickets = await contract.call('getUserOwnedTickets', [uniqueId._j]);
+      //const tickets = await contract.call('getUserOwnedTickets', ["9bdd6a453246ebd2"]);
+      //console.log("tickets", tickets);
+      const existingTicket = await axios.get(`http://192.168.100.60:8800/ticket/${uniqueId._j}`);
+      //console.log("existingTicket", existingTicket.data);
 
-    const parsedTickets = [];
+      const parsedTickets = [];
 
-    for (let i = 0; i < tickets.length; i++) {
-      parsedTickets.push({
-        ticketId: i + 1,
-        owner: tickets[i][0],
-        time: tickets[i][1].toNumber(),
-        concertId: tickets[i][2].toString(),
-        zoneId: tickets[i][3].toString(),
-        used: tickets[i][4]
-      })
+      for (let i = 0; i < tickets.length; i++) {
+        parsedTickets.push({
+          ticketId: i + 1,
+          owner: tickets[i][0],
+          time: tickets[i][1].toNumber(),
+          concertId: tickets[i][2].toString(),
+          zoneId: tickets[i][3].toString(),
+          used: tickets[i][4],
+          receipt: existingTicket.data[i] ? existingTicket.data[i].receipt : null,
+        })
+      }
+      //console.log("User Ticket", JSON.stringify(parsedTickets, null, 2));
+
+      return parsedTickets;
+    } catch (error) {
+      console.log("Error getting user tickets:", error);
+      throw error;
     }
-    //console.log("User Ticket", JSON.stringify(parsedTickets, null, 2));
-    return parsedTickets;
   }
 
   const getDonations = async (pId) => {
@@ -488,6 +485,18 @@ export const StateContextProvider = ({ children }) => {
     }
   }
 
+  const getCategory = async () => {
+    try {
+      const response = await axios.get("http://192.168.100.60:8800/category");
+      //console.log("getCategory success", response.data);
+      const categories = response.data.map(category => category.categoryname);
+      return categories;
+    } catch (error) {
+      console.log("getCategory failure", error);
+      return [];
+    }
+  };
+
 
   return (
     <StateContext.Provider
@@ -509,7 +518,8 @@ export const StateContextProvider = ({ children }) => {
         purchaseTickets,
         getUserTickets,
         getConcertById,
-        checkServer
+        checkServer,
+        getCategory
       }}
     >
       {children}

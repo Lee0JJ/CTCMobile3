@@ -49,6 +49,7 @@ const OrderHistoryCard = ({
               if (OccurDate < new Date().toLocaleString()) {
                 return 0;
               } else {
+                //console.log('data', JSON.stringify(data, null, 2));
                 navigationHandler.push('Ticket', {
                   //id: data[0].concertId,
                   item: JSON.stringify(data),

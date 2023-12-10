@@ -42,7 +42,7 @@ import GradientBGIcon from '../components/GradientBGIcon';
 
 
 const HomeScreen = ({ navigation }) => {
-  const { address, contract, getCampaigns, checkServer } = useStateContext();
+  const { address, contract, getCampaigns, checkServer, getCategory } = useStateContext();
   const [server, setServer] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [concertList, setConcertList] = useState([]);
@@ -51,19 +51,20 @@ const HomeScreen = ({ navigation }) => {
   const [showAnimation, setShowAnimation] = useState(false);
 
   const [searchText, setSearchText] = useState('');
-  const [categories, setCategories] = useState([
-    "All",
-    "Pop",
-    "Rock",
-    "Hip Hop",
-    "Country",
-    "Jazz",
-    "Electronic",
-    "Classical",
-    "R&B",
-    "Reggae",
-    "Indie"
-  ]);
+  const [categories, setCategories] = useState(getCategory());
+
+  useEffect(() => {
+    const fetchCategory = async () => {
+      try {
+        const category = await getCategory();
+        setCategories(category);
+      } catch (error) {
+        console.log("fetchCategory error", error);
+      }
+    };
+    fetchCategory();
+  }, []);
+
   const [categoryIndex, setCategoryIndex] = useState({
     index: 0,
     category: categories[0],
@@ -240,7 +241,7 @@ const HomeScreen = ({ navigation }) => {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.CategoryScrollViewStyle}>
-            {categories.map((data, index) => (
+            {categories?.map((data, index) => (
               <View
                 key={index.toString()}
                 style={styles.CategoryScrollViewContainer}>

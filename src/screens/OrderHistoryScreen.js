@@ -103,6 +103,8 @@ const OrderHistoryScreen = ({ navigation }) => {
     });
   };
 
+  
+
   return (
     <View style={styles.ScreenContainer}>
       <StatusBar backgroundColor={COLORS.primaryBlackHex} />
@@ -114,7 +116,7 @@ const OrderHistoryScreen = ({ navigation }) => {
           style={[styles.ScrollViewInnerView, { marginBottom: tabBarHeight }]}>
           <View style={styles.ItemContainer}>
             <HeaderBar title="Ticket Wallet" />
-            {userTickets == undefined ? (
+            {!userTickets ? (
               <EmptyListAnimation title={'No Ticket Yet'} />
             ) : (
               <View style={styles.ListItemContainer}>

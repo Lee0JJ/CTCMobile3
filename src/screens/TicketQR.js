@@ -39,8 +39,12 @@ import GradientBGIcon from '../components/GradientBGIcon';
 
 const TicketQR = ({ navigation, route }) => {
     // Retrieve the ticket from the route
-    const ticket = JSON.parse(route.params.item);
-    //console.log('ticket', ticket[0]);
+    const [ticket, setTicket] = useState(JSON.parse(route.params.item));
+    console.log('ticket', JSON.stringify(ticket, null, 2));
+
+    const refreshTicket = () => {
+        setTicket(JSON.parse(route.params.item));
+    };
 
     const BackHandler = () => {
         navigation.pop();
@@ -119,6 +123,7 @@ const TicketQR = ({ navigation, route }) => {
                     <TouchableOpacity
                         onPress={() => {
                             console.log('Unique ID', uniqueId._j);
+                            refreshTicket();
                         }}
                         style={[
                             styles.SizeBox,
@@ -144,7 +149,7 @@ const TicketQR = ({ navigation, route }) => {
                         <TouchableOpacity
                             key={index}
                             onPress={() => {
-                                console.log('data', data.ticketId);
+                                data.receipt ? Linking.openURL(`https://sepolia.etherscan.io/tx/${data.receipt}`) : null;
                             }}
                             style={[
                                 styles.SizeBox,
@@ -162,8 +167,8 @@ const TicketQR = ({ navigation, route }) => {
                                     }
                                 ]}
                             >
-                                Receipt: {data.ticketId + "\n"}
-                                Used Status: {JSON.stringify(data.used)}
+                                Receipt: {data.receipt ? data.receipt : "Does not exist"}{"\n\n"}
+                                Used Status: {JSON.stringify(data.used) == "true" ? "Used" : "Unused"}
                             </Text>
                         </TouchableOpacity>
                     ))}

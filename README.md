@@ -1,32 +1,16 @@
-# React Native + thirdweb + TypeScript Starter Template
-
-Got questions? Jump into our [Discord](https://discord.gg/thirdweb) to speak with us directly.
-
 ## Getting Started
-
-Create a project using this example:
-
-```bash
-npx thirdweb create --template react-native-typescript-starter
-```
-
-Install dependencies:
-
-```bash
-yarn install # or npm install
-```
-
-If you are developing on iOS, you will need to install the pods:
-
-```bash
-cd ios && pod install
-```
-
-## Running the app
-
-Open the project in Xcode and left click on the folder name and select your apple developer team. Then, click the play button to run the app.
+## Install neccessary tools
+npm i
+## Run the project
+npm run start
+## OR run android only
+npm run android
+## OR
+npm run ios
 
 ## Learn More
+
+Contact email : ace010110@gmail.com
 
 To learn more about thirdweb and React Native, take a look at the following resources:
 

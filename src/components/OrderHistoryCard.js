@@ -62,7 +62,7 @@ const OrderHistoryCard = ({
               imagelink_square={data[0].image}
               special_ingredient={new Date(data[0].time * 1000).toLocaleString()}
               prices={"data.prices"}
-              ItemPrice={data.length}
+              ItemPrice={data.length ? data.length : 0}
             />
           </TouchableOpacity>
         ))}

@@ -60,7 +60,7 @@ return (
     style={styles.CardLinearGradient}>
     <View style={styles.CardInfoContainer}>
       <View style={styles.CardImageInfoContainer}>
-        <Image source={imageURL.length == 0 ? (thirdweb) : ({ uri: imageURL[0] })} style={styles.Image} />
+        {/* <Image source={imageURL.length == 0 ? (thirdweb) : ({ uri: imageURL[0] })} style={styles.Image} /> */}
         <View>
           <Text style={styles.CardTitle}>{name}</Text>
           <Text style={styles.CardSubtitle}>{special_ingredient}</Text>

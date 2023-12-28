@@ -241,7 +241,7 @@ const HomeScreen = ({ navigation }) => {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.CategoryScrollViewStyle}>
-            {categories?.map((data, index) => (
+            {Array.isArray(categories) && categories.map((data, index) => (
               <View
                 key={index.toString()}
                 style={styles.CategoryScrollViewContainer}>

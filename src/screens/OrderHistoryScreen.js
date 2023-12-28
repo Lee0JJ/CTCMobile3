@@ -75,9 +75,11 @@ const OrderHistoryScreen = ({ navigation }) => {
     const fetchCampaigns = async () => {
       try {
         setIsLoading(true);
+        setShowAnimation(true);
         const data = await getCampaigns();
         setConcertList(data);
         setIsLoading(false);
+        setShowAnimation(false);
       } catch (error) {
         console.log("fetchCampaigns error", error);
       } finally {
@@ -103,11 +105,15 @@ const OrderHistoryScreen = ({ navigation }) => {
     });
   };
 
-  
-
   return (
     <View style={styles.ScreenContainer}>
       <StatusBar backgroundColor={COLORS.primaryBlackHex} />
+
+      {showAnimation ?
+        <PopUpAnimation
+          source={require('../lottie/ticket.json')}
+        />
+        : null}
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -117,7 +123,9 @@ const OrderHistoryScreen = ({ navigation }) => {
           <View style={styles.ItemContainer}>
             <HeaderBar title="Ticket Wallet" />
             {!userTickets ? (
-              <EmptyListAnimation title={'No Ticket Yet'} />
+              <View style={{ flex: 1, paddingHorizontal: 100, }}>
+                <EmptyListAnimation title={'No Concert Available'} />
+              </View>
             ) : (
               <View style={styles.ListItemContainer}>
                 {Object.values(userTickets).map((data, index) => {
@@ -129,8 +137,8 @@ const OrderHistoryScreen = ({ navigation }) => {
                       CartList={data}
                       Title={concertList && concertList[Object.values(data)[0][0].concertId - 1]?.name}
                       OccurDate={new Date(concertList && concertList[Object.values(data)[0][0].concertId - 1]?.date * 1000).toLocaleString()}
-                      //CartListPrice={data} //data["1"].length
-                      //OrderDate={new Date(data.time * 1000).toLocaleString()}
+                    //CartListPrice={data} //data["1"].length
+                    //OrderDate={new Date(data.time * 1000).toLocaleString()}
                     />
                   );
                   // } catch (error) {

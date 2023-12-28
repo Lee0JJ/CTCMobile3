@@ -15,7 +15,7 @@ import { err } from 'react-native-svg/lib/typescript/xml';
 const StateContext = createContext();
 
 export const StateContextProvider = ({ children }) => {
-  const { contract, isLoading } = useContract('0x57a16bA9144b76FD2a87cad6C8B17BC8393e6F0F');
+  const { contract, isLoading } = useContract('0xa04Cad5b3e5FaE44c4aECF2abDbDE5adCc994043');
   const { mutateAsync: createConcert, isLoading1 } = useContractWrite(contract, "createConcert")
   const { mutateAsync: createOrganizer, isLoading2 } = useContractWrite(contract, "registerAsOrganizer")
 
@@ -270,14 +270,6 @@ export const StateContextProvider = ({ children }) => {
         value: ethers.utils.parseEther((String(amount)))
       });
 
-      // ticketid INT NOT NULL AUTO_INCREMENT,
-      // concertid INT NOT NULL,
-      // customerid INT NOT NULL,
-      // receipt VARCHAR(255) NOT NULL,
-      // zone VARCHAR(255) NOT NULL,
-      // purchaseDate DATETIME NOT NULL,
-      // used BOOLEAN NOT NULL,
-
       //create form for axios
       const ticket = {
         concertid: concertId,
@@ -288,6 +280,7 @@ export const StateContextProvider = ({ children }) => {
         used: false
       }
 
+      console.log("ticket", ticket);
       await axios.post("http://192.168.100.60:8800/ticket", ticket);
 
       console.log("Receipt", JSON.stringify(data.receipt));
@@ -308,7 +301,9 @@ export const StateContextProvider = ({ children }) => {
 
       const parsedTickets = [];
 
-      for (let i = 0; i < tickets.length; i++) {
+      console.log("tickets", JSON.stringify(tickets, null, 2));
+
+      for (let i = 0; i < tickets?.length; i++) {
         parsedTickets.push({
           ticketId: i + 1,
           owner: tickets[i][0],
@@ -323,25 +318,9 @@ export const StateContextProvider = ({ children }) => {
 
       return parsedTickets;
     } catch (error) {
-      console.log("Error getting user tickets:", error);
-      throw error;
+      console.log("Error getting unsync user tickets");
+      //throw error;
     }
-  }
-
-  const getDonations = async (pId) => {
-    const donations = await contract.call('getDonators', [pId]);
-    const numberOfDonations = donations[0].length;
-
-    const parsedDonations = [];
-
-    for (let i = 0; i < numberOfDonations; i++) {
-      parsedDonations.push({
-        donator: donations[0][i],
-        donation: ethers.utils.formatEther(donations[1][i].toString())
-      })
-    }
-
-    return parsedDonations;
   }
 
   const applyOrganizer = async (form) => {
@@ -509,7 +488,6 @@ export const StateContextProvider = ({ children }) => {
         getCampaigns,
         getUserCampaigns,
         donate,
-        getDonations,
         applyOrganizer,
         getOrganizer,
         updateOrganizer,
